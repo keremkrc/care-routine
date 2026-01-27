@@ -1,16 +1,33 @@
-// Gerekli kütüphaneler (getDocs ve writeBatch eklendi!)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } 
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, query, where, onSnapshot, orderBy, deleteDoc, updateDoc, doc, getDocs, writeBatch } 
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// --- SENİN AYARLARIN ---
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  query,
+  where,
+  onSnapshot,
+  orderBy,
+  deleteDoc,
+  updateDoc,
+  doc,
+  getDocs,
+  writeBatch
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+/* Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyBA2bAK2-TEROPpocPoLo59g4JL4gIDmJg",
   authDomain: "careroutine-90ba8.firebaseapp.com",
   projectId: "careroutine-90ba8",
-  storageBucket: "careroutine-90ba8.firebasestorage.app",
+  storageBucket: "careroutine-90ba8.appspot.com",
   messagingSenderId: "447055179823",
   appId: "1:447055179823:web:5c9e7b45f277ea063896da"
 };
@@ -19,247 +36,130 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// HTML Elemanları
-const loginContainer = document.getElementById('loginContainer');
-const dashboardContainer = document.getElementById('dashboardContainer');
-const userEmailDisplay = document.getElementById('userEmailDisplay');
-const logoutBtn = document.getElementById('logoutBtn');
-const loginForm = document.getElementById('loginForm');
-const emailInput = document.getElementById('email');
-const passwordInput = document.getElementById('password');
-const showRegisterLink = document.getElementById('showRegister');
-const headerTitle = document.querySelector('.header h1');
-const loginBtn = document.getElementById('loginBtn');
-const addBtn = document.getElementById('addBtn');
-const medicineList = document.getElementById('medicineList');
+/* DOM */
+const loginContainer = document.getElementById("loginContainer");
+const dashboardContainer = document.getElementById("dashboardContainer");
+const userEmailDisplay = document.getElementById("userEmailDisplay");
+const medicineList = document.getElementById("medicineList");
 
-let isRegistering = false;
 let unsubscribe;
+let isRegistering = false;
+let confettiPlayed = false;
 
-// --- 1. KULLANICI DURUMU ---
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        // GİRİŞ YAPILDI
-        loginContainer.style.display = 'none';
-        dashboardContainer.style.display = 'block';
-        userEmailDisplay.textContent = "Selam, " + user.email.split('@')[0];
+/* AUTH STATE */
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    loginContainer.style.display = "block";
+    dashboardContainer.style.display = "none";
+    unsubscribe && unsubscribe();
+    return;
+  }
 
-        // --> YENİ ÖZELLİK: GÜN KONTROLÜ VE SIFIRLAMA <--
-        await checkAndResetDailyTasks(user);
+  loginContainer.style.display = "none";
+  dashboardContainer.style.display = "block";
+  userEmailDisplay.textContent = user.email.split("@")[0];
 
-        // Verileri Dinle
-        const q = query(
-            collection(db, "routines"), 
-            where("uid", "==", user.uid),
-            orderBy("time") 
-        );
+  await resetDailyTasks(user);
 
-        unsubscribe = onSnapshot(q, (querySnapshot) => {
-            medicineList.innerHTML = "";
-            
-            // --- YENİ: İLERLEME HESAPLAMA MANTIĞI ---
-            let totalTasks = 0;
-            let completedTasks = 0;
+  const q = query(
+    collection(db, "routines"),
+    where("uid", "==", user.uid),
+    orderBy("time")
+  );
 
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                renderListElement(doc.id, data);
-                
-                // Sayım yapıyoruz
-                totalTasks++;
-                if (data.isCompleted) {
-                    completedTasks++;
-                }
-            });
+  unsubscribe = onSnapshot(q, snap => {
+    medicineList.innerHTML = "";
+    let total = 0, done = 0;
 
-            // Yüzdeyi Hesapla
-            // Eğer hiç görev yoksa 0, varsa (Tamamlanan / Toplam) * 100
-            const percent = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
-            
-            // HTML'e yazdır
-            document.getElementById('progressPercent').textContent = `%${percent}`;
-            document.getElementById('progressBarFill').style.width = `${percent}%`;
-            document.getElementById('taskCount').textContent = `${totalTasks} Görev`;
-            
-            // Konfeti (Şimdilik sadece konsola yazalım, sonra ekleriz)
-            if (percent === 100 && totalTasks > 0) {
-                launchConfetti();            }
-        });
-
-    } else {
-        // ÇIKIŞ YAPILDI
-        loginContainer.style.display = 'block';
-        dashboardContainer.style.display = 'none';
-        if (unsubscribe) unsubscribe();
-    }
-});
-
-// --- YENİ FONKSİYON: GÜNLÜK SIFIRLAMA ---
-async function checkAndResetDailyTasks(user) {
-    // Bugünün tarihini al (Örn: "27.01.2026")
-    const today = new Date().toLocaleDateString('tr-TR');
-    
-    // Tarayıcı hafızasından son giriş tarihini al
-    const lastLoginDate = localStorage.getItem('lastLoginDate_' + user.uid);
-
-    // Eğer son giriş tarihi bugünden farklıysa (yani yeni bir günse)
-    if (lastLoginDate !== today) {
-        console.log("Yeni gün tespit edildi! Rutinler sıfırlanıyor...");
-
-        // Kullanıcının tamamlanmış görevlerini bul
-        const q = query(
-            collection(db, "routines"),
-            where("uid", "==", user.uid),
-            where("isCompleted", "==", true) // Sadece tikli olanları getir
-        );
-
-        const snapshot = await getDocs(q);
-
-        if (!snapshot.empty) {
-            // "Batch" işlemi: Hepsini tek seferde paketleyip gönderir (Daha hızlıdır)
-            const batch = writeBatch(db);
-            
-            snapshot.forEach((doc) => {
-                // Her birinin isCompleted özelliğini false yap
-                batch.update(doc.ref, { isCompleted: false });
-            });
-
-            // Paketi veritabanına gönder
-            await batch.commit();
-            alert("Günaydın! Yeni bir gün olduğu için listen sıfırlandı. 🌞");
-        }
-
-        // Bugünü "son giriş tarihi" olarak kaydet
-        localStorage.setItem('lastLoginDate_' + user.uid, today);
-    } else {
-        console.log("Bugün zaten giriş yapılmış, sıfırlamaya gerek yok.");
-    }
-}
-
-// --- LİSTE ELEMANI (Değişmedi) ---
-function renderListElement(docId, data) {
-    const li = document.createElement('li');
-    if (data.isCompleted) li.classList.add('completed-task');
-    const icon = getTaskIcon(data.name);//ikon bul
-
-    li.innerHTML = `
-        <div style="display:flex; align-items:center;">
-            <input type="checkbox" class="status-check" ${data.isCompleted ? 'checked' : ''}>
-            <span><b>${data.time}</b> - ${data.name}</span>
-        </div>
-        <button class="delete-btn" data-id="${docId}" style="width:auto; padding:5px 10px; background:#d9534f; color:white; border:none; border-radius:4px; cursor:pointer;">Sil</button>
-    `;
-
-    li.querySelector('.delete-btn').addEventListener('click', async () => {
-        await deleteDoc(doc(db, "routines", docId));
+    snap.forEach(d => {
+      total++;
+      d.data().isCompleted && done++;
+      renderItem(d.id, d.data());
     });
 
-    li.querySelector('.status-check').addEventListener('change', async (e) => {
-        await updateDoc(doc(db, "routines", docId), { isCompleted: e.target.checked });
-    });
+    updateProgress(total, done);
+  });
+});
 
-    medicineList.appendChild(li);
+/* DAILY RESET */
+async function resetDailyTasks(user) {
+  const today = new Date().toLocaleDateString("tr-TR");
+  const key = `lastLogin_${user.uid}`;
+
+  if (localStorage.getItem(key) === today) return;
+
+  const q = query(
+    collection(db, "routines"),
+    where("uid", "==", user.uid),
+    where("isCompleted", "==", true)
+  );
+
+  const snap = await getDocs(q);
+  if (!snap.empty) {
+    const batch = writeBatch(db);
+    snap.forEach(d => batch.update(d.ref, { isCompleted: false }));
+    await batch.commit();
+  }
+
+  localStorage.setItem(key, today);
 }
 
-// --- EKLEME VE DİĞERLERİ (Aynı) ---
-addBtn.addEventListener('click', async () => {
-    const name = document.getElementById('medicineName').value;
-    const time = document.getElementById('medicineTime').value;
-    const currentUser = auth.currentUser;
+/* RENDER */
+function renderItem(id, data) {
+  const li = document.createElement("li");
+  if (data.isCompleted) li.classList.add("completed-task");
 
-    if(name && time && currentUser) {
-        await addDoc(collection(db, "routines"), {
-            uid: currentUser.uid,
-            name: name,
-            time: time,
-            isCompleted: false,
-            createdAt: new Date()
-        });
-        document.getElementById('medicineName').value = "";
-    } else {
-        alert("Lütfen tüm alanları doldurun.");
-    }
-});
+  const icon = getTaskIcon(data.name);
 
-logoutBtn.addEventListener('click', () => signOut(auth));
+  li.innerHTML = `
+    <div>
+      <input type="checkbox" ${data.isCompleted ? "checked" : ""}>
+      <span>${icon} <b>${data.time}</b> - ${data.name}</span>
+    </div>
+    <button class="delete-btn">Sil</button>
+  `;
 
-loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const email = emailInput.value;
-    const password = passwordInput.value;
-    if (isRegistering) {
-        createUserWithEmailAndPassword(auth, email, password).catch((err) => alert(err.message));
-    } else {
-        signInWithEmailAndPassword(auth, email, password).catch((err) => alert(err.message));
-    }
-});
+  li.querySelector("input").onchange = e =>
+    updateDoc(doc(db, "routines", id), { isCompleted: e.target.checked });
 
-showRegisterLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    isRegistering = !isRegistering;
-    if (isRegistering) {
-        headerTitle.textContent = "Kayıt Ol";
-        loginBtn.textContent = "Kayıt Ol";
-        showRegisterLink.textContent = "Zaten hesabın var mı? Giriş Yap";
-    } else {
-        headerTitle.textContent = "CareRoutine";
-        loginBtn.textContent = "Giriş Yap";
-        showRegisterLink.textContent = "Hesabın yok mu? Kayıt Ol";
-    }
-});
-// --- KONFETİ FONKSİYONU ---
+  li.querySelector(".delete-btn").onclick = () =>
+    deleteDoc(doc(db, "routines", id));
+
+  medicineList.appendChild(li);
+}
+
+/* PROGRESS */
+function updateProgress(total, done) {
+  const percent = total ? Math.round((done / total) * 100) : 0;
+  document.getElementById("progressPercent").textContent = `%${percent}`;
+  document.getElementById("progressBarFill").style.width = `${percent}%`;
+  document.getElementById("taskCount").textContent = `${total} Görev`;
+
+  if (percent === 100 && !confettiPlayed && total > 0) {
+    launchConfetti();
+    confettiPlayed = true;
+  }
+}
+
+/* ICON DETECTOR */
+function getTaskIcon(name = "") {
+  const text = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const map = [
+    { k: ["su"], i: "💧" },
+    { k: ["ilac","hap","vitamin"], i: "💊" },
+    { k: ["spor","kosu","yuruyus","gym"], i: "🏃" },
+    { k: ["kitap","oku","ders"], i: "📚" },
+    { k: ["kahve","cay"], i: "☕" }
+  ];
+
+  for (const {k,i} of map) {
+    if (k.some(w => text.includes(w))) return i;
+  }
+  return "📌";
+}
+
+/* CONFETTI */
 function launchConfetti() {
-    var duration = 3 * 1000; // 3 saniye sürsün
-    var animationEnd = Date.now() + duration;
-    var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-    function randomInRange(min, max) {
-      return Math.random() * (max - min) + min;
-    }
-
-    var interval = setInterval(function() {
-      var timeLeft = animationEnd - Date.now();
-
-      if (timeLeft <= 0) {
-        return clearInterval(interval);
-      }
-
-      var particleCount = 50 * (timeLeft / duration);
-      
-      // Ekranın iki köşesinden rastgele fırlat
-      confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
-      confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
-    }, 250);
+  confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } });
 }
-// --- AKILLI KELİME DEDEKTİFİ (GELİŞTİRİLMİŞ) ---
-function getTaskIcon(taskName = '') {
-    // Güvenli giriş + normalize (Türkçe karakter desteği)
-    const normalized = taskName
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '');
-
-    // Anahtar kelime - ikon haritası
-    const iconMap = [
-        { keywords: ['su'], icon: '💧' },
-        { keywords: ['ilac', 'hap', 'vitamin'], icon: '💊' },
-        { keywords: ['spor', 'yuruyus', 'kosu', 'egzersiz', 'gym'], icon: '🏃' },
-        { keywords: ['kitap', 'oku', 'ders', 'calis'], icon: '📚' },
-        { keywords: ['yemek', 'kahvalti', 'ogle', 'aksam'], icon: '🍽️' },
-        { keywords: ['uyku', 'yat'], icon: '🛌' },
-        { keywords: ['kod', 'yazilim', 'proje', 'calisma'], icon: '💻' },
-        { keywords: ['kahve', 'cay'], icon: '☕' },
-        { keywords: ['dus', 'banyo', 'yikan'], icon: '🚿' },
-        { keywords: ['kedi', 'kopek', 'mama'], icon: '🐾' } // Ekstra bir tane de benden :)
-    ];
-
-    // İlk eşleşeni bul
-    for (const { keywords, icon } of iconMap) {
-        if (keywords.some(word => normalized.includes(word))) {
-            return icon;
-        }
-    }
-
-    // Varsayılan ikon
-    return '📌';
-}
+    
