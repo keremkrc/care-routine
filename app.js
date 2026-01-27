@@ -140,6 +140,7 @@ async function checkAndResetDailyTasks(user) {
 function renderListElement(docId, data) {
     const li = document.createElement('li');
     if (data.isCompleted) li.classList.add('completed-task');
+    const icon = getTaskIcon(data.name);//ikon bul
 
     li.innerHTML = `
         <div style="display:flex; align-items:center;">
@@ -229,4 +230,36 @@ function launchConfetti() {
       confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
       confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
     }, 250);
+}
+// --- AKILLI KELİME DEDEKTİFİ (GELİŞTİRİLMİŞ) ---
+function getTaskIcon(taskName = '') {
+    // Güvenli giriş + normalize (Türkçe karakter desteği)
+    const normalized = taskName
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+    // Anahtar kelime - ikon haritası
+    const iconMap = [
+        { keywords: ['su'], icon: '💧' },
+        { keywords: ['ilac', 'hap', 'vitamin'], icon: '💊' },
+        { keywords: ['spor', 'yuruyus', 'kosu', 'egzersiz', 'gym'], icon: '🏃' },
+        { keywords: ['kitap', 'oku', 'ders', 'calis'], icon: '📚' },
+        { keywords: ['yemek', 'kahvalti', 'ogle', 'aksam'], icon: '🍽️' },
+        { keywords: ['uyku', 'yat'], icon: '🛌' },
+        { keywords: ['kod', 'yazilim', 'proje', 'calisma'], icon: '💻' },
+        { keywords: ['kahve', 'cay'], icon: '☕' },
+        { keywords: ['dus', 'banyo', 'yikan'], icon: '🚿' },
+        { keywords: ['kedi', 'kopek', 'mama'], icon: '🐾' } // Ekstra bir tane de benden :)
+    ];
+
+    // İlk eşleşeni bul
+    for (const { keywords, icon } of iconMap) {
+        if (keywords.some(word => normalized.includes(word))) {
+            return icon;
+        }
+    }
+
+    // Varsayılan ikon
+    return '📌';
 }
