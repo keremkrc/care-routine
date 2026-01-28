@@ -1,16 +1,80 @@
 {
-    "name": "CareRoutine Premium",
-    "short_name": "CareRoutine",
-    "start_url": "/index.html",
-    "display": "standalone",
-    "background_color": "#0f172a",
-    "theme_color": "#6366f1",
-    "orientation": "portrait",
-    "icons": [
-      {
-        "src": "https://cdn-icons-png.flaticon.com/512/2966/2966327.png",
-        "sizes": "512x512",
-        "type": "image/png"
-      }
-    ]
+  "name": "CareRoutine Premium - Modern Yaşam Asistanı",
+  "short_name": "CareRoutine",
+  "description": "Günlük rutinlerinizi takip edin, hedeflerinize ulaşın. Modern ve kullanıcı dostu arayüzle yaşamınızı organize edin.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0e1a",
+  "theme_color": "#6366f1",
+  "categories": ["productivity", "lifestyle", "health"],
+  "lang": "tr",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/128/2966/2966327.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/256/2966/2966327.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2966/2966327.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://via.placeholder.com/540x720/6366f1/ffffff?text=Dashboard",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "https://via.placeholder.com/1280x720/6366f1/ffffff?text=Desktop+View",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Yeni Görev Ekle",
+      "short_name": "Ekle",
+      "description": "Hızlıca yeni bir görev ekle",
+      "url": "/?action=add",
+      "icons": [
+        {
+          "src": "https://cdn-icons-png.flaticon.com/96/3524/3524388.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Görevleri Görüntüle",
+      "short_name": "Görevler",
+      "description": "Tüm görevlerini incele",
+      "url": "/?action=view",
+      "icons": [
+        {
+          "src": "https://cdn-icons-png.flaticon.com/96/3524/3524636.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "display_override": ["window-controls-overlay", "standalone"],
+  "edge_side_panel": {
+    "preferred_width": 400
   }
+}

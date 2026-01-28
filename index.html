@@ -3,36 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CareRoutine Premium</title>
+    <meta name="description" content="Günlük rutinlerinizi takip edin, hedeflerinize ulaşın - Modern yaşam asistanınız">
+    <meta name="theme-color" content="#6366f1">
     
-    <link rel="stylesheet" href="style.css">
+    <title>CareRoutine Premium - Modern Yaşam Asistanı</title>
     
+    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2966/2966327.png">
     
+    <!-- Fonts - Using distinctive fonts per frontend-design skill -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Confetti Library -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
 
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loader-container">
+            <div class="loader"></div>
+            <p>Yükleniyor...</p>
+        </div>
+    </div>
+
+    <!-- Offline Indicator -->
+    <div id="offlineIndicator" class="offline-indicator">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+            <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+            <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+            <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+            <line x1="12" y1="20" x2="12.01" y2="20"></line>
+        </svg>
+        <span>Çevrimdışı</span>
+    </div>
+
+    <!-- Login Screen -->
     <div class="login-wrapper" id="loginContainer">
         <div class="glass-panel login-container">
+            
+            <!-- Login Image -->
+            <div class="login-image-container">
+                <img src="images\them.jpg" 
+                     alt="Hoşgeldiniz" 
+                     class="login-image"
+                     onerror="this.src='https://via.placeholder.com/600x300/6366f1/ffffff?text=CareRoutine'">
+            </div>
+
+            <!-- Header -->
             <div class="header">
                 <h1>CareRoutine</h1>
                 <p>Modern Yaşam Asistanı</p>
             </div>
 
+            <!-- Auth Form -->
             <form id="authForm">
                 <div class="input-group">
-                    <label>Email Adresi</label>
-                    <input type="email" id="email" placeholder="isim@ornek.com" required>
-                </div>
-                <div class="input-group">
-                    <label>Şifre</label>
-                    <input type="password" id="password" placeholder="••••••" required>
+                    <label for="email">Email Adresi</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email"
+                        placeholder="isim@ornek.com" 
+                        autocomplete="email"
+                        required>
                 </div>
                 
-                <button type="submit" id="authBtn" class="primary-btn">Giriş Yap</button>
+                <div class="input-group">
+                    <label for="password">Şifre</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password"
+                        placeholder="••••••" 
+                        autocomplete="current-password"
+                        minlength="6"
+                        required>
+                </div>
+                
+                <button type="submit" id="authBtn" class="primary-btn">
+                    Giriş Yap
+                </button>
                 
                 <p class="switch-text">
                     <span id="switchText">Hesabın yok mu?</span> 
@@ -42,18 +104,35 @@
         </div>
     </div>
 
+    <!-- Dashboard -->
     <div class="dashboard-wrapper" id="dashboardContainer" style="display: none;">
         
         <div class="bento-grid">
             
+            <!-- Profile Card -->
             <div class="glass-panel bento-card profile-card">
-                <div class="profile-info">
-                    <span style="color: #94a3b8; font-size: 13px; letter-spacing: 0.5px;">HOŞ GELDİN,</span>
-                    <h2 id="userEmailDisplay">Kullanıcı</h2>
+                <div class="profile-content-wrapper">
+                    <img src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff&size=128" 
+                         alt="Profil" 
+                         class="profile-image"
+                         id="profileImage">
+                    
+                    <div class="profile-info">
+                        <span class="profile-greeting">HOŞ GELDİN,</span>
+                        <h2 id="userEmailDisplay">Kullanıcı</h2>
+                    </div>
                 </div>
-                <button id="logoutBtn" class="logout-btn">Çıkış Yap</button>
+                <button id="logoutBtn" class="logout-btn" aria-label="Çıkış yap">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Çıkış Yap
+                </button>
             </div>
 
+            <!-- Progress Card -->
             <div class="glass-panel bento-card progress-card">
                 <div class="progress-header">
                     <h3>Günlük Başarım</h3>
@@ -62,39 +141,69 @@
                 <div class="progress-track">
                     <div id="progressBarFill" class="progress-fill"></div>
                 </div>
-                <p id="taskCount" style="margin-top:10px; font-size:13px; color:#94a3b8;">0 Bekleyen</p>
+                <p id="taskCount" class="task-count-text">0 Bekleyen</p>
             </div>
 
+            <!-- Add Task Card -->
             <div class="glass-panel bento-card add-card">
+                
+                <div class="add-image-container">
+                    <img src="images\20241221_145945.jpg" 
+                         alt="Yeni Rutin Ekle" 
+                         class="add-image"
+                         onerror="this.src='https://via.placeholder.com/600x250/10b981/ffffff?text=Yeni+Rutin+Ekle'">
+                </div>
+
                 <div class="add-form">
-                    <input type="text" id="medicineName" placeholder="Yeni rutin (Örn: Su iç, Koşu yap)">
-                    <input type="time" id="medicineTime">
+                    <input 
+                        type="text" 
+                        id="medicineName" 
+                        placeholder="Yeni rutin (Örn: Su içmek, Kitap okumak)"
+                        maxlength="100"
+                        autocomplete="off">
+                    <input 
+                        type="time" 
+                        id="medicineTime"
+                        required>
                     <button id="addBtn" class="add-btn">
-                        + Ekle
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Ekle
                     </button>
                 </div>
             </div>
 
+            <!-- Task List Card -->
             <div class="glass-panel bento-card list-card">
                 <div class="list-header">
                     <h3>Bugünün Görevleri</h3>
                     <span class="badge">Bugün</span>
                 </div>
-                <ul id="medicineList">
-                    </ul>
+                <ul id="medicineList" role="list">
+                    <!-- Tasks will be rendered here -->
+                </ul>
             </div>
 
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
     <script type="module" src="app.js"></script>
     
+    <!-- Service Worker Registration -->
     <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js')
-        .then(() => console.log("Service Worker Kayıtlı"))
-        .catch(err => console.log("SW Hatası:", err));
-      }
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('✓ Service Worker kayıtlı'))
+                    .catch(err => console.log('✗ SW hatası:', err));
+            });
+        }
     </script>
 </body>
 </html>
