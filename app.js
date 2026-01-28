@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, query, where, onSnapshot, orderBy, deleteDoc, updateDoc, doc, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+/* Firebase Config */
 const firebaseConfig = {
   apiKey: "AIzaSyBA2bAK2-TEROPpocPoLo59g4JL4gIDmJg",
   authDomain: "careroutine-90ba8.firebaseapp.com",
@@ -15,26 +16,63 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// DOM Elemanları
+/* DOM Elements */
 const loginContainer = document.getElementById("loginContainer");
 const dashboardContainer = document.getElementById("dashboardContainer");
 const userEmailDisplay = document.getElementById("userEmailDisplay");
 const medicineList = document.getElementById("medicineList");
-const loginForm = document.getElementById("loginForm");
-const addBtn = document.getElementById("addBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const showRegister = document.getElementById("showRegister");
+const authForm = document.getElementById("authForm");
+const toggleAuthBtn = document.getElementById("toggleAuth");
+const authBtn = document.getElementById("authBtn");
+const switchText = document.getElementById("switchText");
 
 let unsubscribe;
 let isRegistering = false;
 let confettiPlayed = false;
 
-// KULLANICI DURUMU
+/* AUTH TOGGLE */
+toggleAuthBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    isRegistering = !isRegistering;
+    authBtn.textContent = isRegistering ? "Kayıt Ol" : "Giriş Yap";
+    switchText.textContent = isRegistering ? "Zaten hesabın var mı?" : "Hesabın yok mu?";
+    toggleAuthBtn.textContent = isRegistering ? "Giriş Yap" : "Kayıt Ol";
+});
+
+/* LOGIN/REGISTER */
+authForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    try {
+        if (isRegistering) await createUserWithEmailAndPassword(auth, email, password);
+        else await signInWithEmailAndPassword(auth, email, password);
+        authForm.reset();
+    } catch (error) { alert("Hata: " + error.message); }
+});
+
+document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+
+/* TASK EKLEME */
+document.getElementById("addBtn").addEventListener("click", async () => {
+    const name = document.getElementById("medicineName").value;
+    const time = document.getElementById("medicineTime").value;
+    const user = auth.currentUser;
+
+    if (name && time && user) {
+        await addDoc(collection(db, "routines"), {
+            name, time, isCompleted: false, uid: user.uid, createdAt: Date.now()
+        });
+        document.getElementById("medicineName").value = "";
+    }
+});
+
+/* AUTH STATE & LISTENER */
 onAuthStateChanged(auth, async user => {
   if (!user) {
-    loginContainer.style.display = "block";
+    loginContainer.style.display = "flex";
     dashboardContainer.style.display = "none";
-    if (unsubscribe) unsubscribe();
+    if(unsubscribe) unsubscribe();
     return;
   }
 
@@ -44,27 +82,19 @@ onAuthStateChanged(auth, async user => {
 
   await resetDailyTasks(user);
 
-  const q = query(
-    collection(db, "routines"),
-    where("uid", "==", user.uid),
-    orderBy("time")
-  );
-
+  const q = query(collection(db, "routines"), where("uid", "==", user.uid), orderBy("time"));
   unsubscribe = onSnapshot(q, snap => {
     medicineList.innerHTML = "";
     let total = 0, done = 0;
-
     snap.forEach(d => {
       total++;
-      if (d.data().isCompleted) done++;
+      if(d.data().isCompleted) done++;
       renderItem(d.id, d.data());
     });
-
     updateProgress(total, done);
   });
 });
 
-// GÜNLÜK SIFIRLAMA
 async function resetDailyTasks(user) {
   const today = new Date().toLocaleDateString("tr-TR");
   const key = `lastLogin_${user.uid}`;
@@ -78,89 +108,65 @@ async function resetDailyTasks(user) {
     await batch.commit();
   }
   localStorage.setItem(key, today);
+  confettiPlayed = false;
 }
 
-// LİSTEYE ELEMAN EKLEME
 function renderItem(id, data) {
   const li = document.createElement("li");
   if (data.isCompleted) li.classList.add("completed-task");
   const icon = getTaskIcon(data.name);
 
   li.innerHTML = `
-    <div style="display:flex; align-items:center;">
+    <div>
       <input type="checkbox" ${data.isCompleted ? "checked" : ""}>
-      <span style="font-size:1.4rem; margin-right:10px;">${icon}</span>
-      <span><b>${data.time}</b> - ${data.name}</span>
+      <span><span style="font-size:1.2em; margin-right:5px;">${icon}</span> <b>${data.time}</b> - ${data.name}</span>
     </div>
-    <button class="btn-danger" style="padding:5px 10px; font-size:12px;">Sil</button>
+    <button class="delete-icon-btn">🗑️</button>
   `;
 
-  li.querySelector("input").onchange = e => updateDoc(doc(db, "routines", id), { isCompleted: e.target.checked });
-  li.querySelector(".btn-danger").onclick = () => deleteDoc(doc(db, "routines", id));
+  li.querySelector("input").onchange = e => {
+    if(!e.target.checked) confettiPlayed = false;
+    updateDoc(doc(db, "routines", id), { isCompleted: e.target.checked });
+  };
+  li.querySelector(".delete-icon-btn").onclick = () => deleteDoc(doc(db, "routines", id));
   medicineList.appendChild(li);
 }
 
-// İLERLEME ÇUBUĞU
 function updateProgress(total, done) {
   const percent = total ? Math.round((done / total) * 100) : 0;
   document.getElementById("progressPercent").textContent = `%${percent}`;
   document.getElementById("progressBarFill").style.width = `${percent}%`;
-  document.getElementById("taskCount").textContent = `${total} Görev`;
+  document.getElementById("taskCount").textContent = `${total - done} Bekleyen`;
 
-  if (percent === 100 && !confettiPlayed && total > 0) {
+  if (percent === 100 && total > 0 && !confettiPlayed) {
     launchConfetti();
     confettiPlayed = true;
-  } else if (percent < 100) {
-    confettiPlayed = false;
   }
 }
 
-// AKILLI İKONLAR
+/* AKILLI İKONLAR (Kelime Bazlı) */
 function getTaskIcon(name = "") {
-  const text = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const text = name.toLowerCase();
+  const words = text.split(" "); 
+
   const map = [
-    { k: ["su", "ic"], i: "💧" },
-    { k: ["ilac","hap","vitamin"], i: "💊" },
-    { k: ["spor","kosu","yuruyus","gym"], i: "🏃" },
-    { k: ["kitap","oku","ders"], i: "📚" },
-    { k: ["kahve","cay"], i: "☕" },
-    { k: ["yemek", "kahvalti", "ogle"], i: "🍽️" },
-    { k: ["uyku", "yat"], i: "🛌" },
-    { k: ["dus", "banyo"], i: "🚿" },
-    { k: ["kod", "yazilim"], i: "💻" }
+    { k: ["su", "water", "iç"], i: "💧" },
+    { k: ["ilaç","hap","vitamin","antibiyotik"], i: "💊" },
+    { k: ["spor","koşu","yürüyüş","gym","fitness", "antrenman"], i: "🏃" },
+    { k: ["kitap","oku","ders","çalış", "ödev"], i: "📚" },
+    { k: ["kahve","çay", "latte"], i: "☕" },
+    { k: ["yemek","öğün","kahvaltı", "öğle", "akşam"], i: "🥗" },
+    { k: ["uyku","yat"], i: "🌙" },
+    { k: ["duş", "banyo"], i: "🚿" },
+    { k: ["kod", "yazılım", "proje"], i: "💻" }
   ];
-  for (const {k,i} of map) if (k.some(w => text.includes(w))) return i;
+
+  for (const {k,i} of map) {
+    if (k.some(keyword => words.includes(keyword))) return i;
+  }
   return "📌";
 }
 
 function launchConfetti() {
-  confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+  confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#6366f1', '#10b981', '#f43f5e'] });
 }
-
-// BUTON OLAYLARI
-addBtn.addEventListener("click", async () => {
-  const name = document.getElementById("medicineName").value;
-  const time = document.getElementById("medicineTime").value;
-  if (name && time && auth.currentUser) {
-    await addDoc(collection(db, "routines"), { uid: auth.currentUser.uid, name, time, isCompleted: false, createdAt: new Date() });
-    document.getElementById("medicineName").value = "";
-  }
-});
-
-loginForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  isRegistering 
-    ? createUserWithEmailAndPassword(auth, email, password).catch(e=>alert(e.message))
-    : signInWithEmailAndPassword(auth, email, password).catch(e=>alert(e.message));
-});
-
-logoutBtn.addEventListener("click", () => signOut(auth));
-showRegister.addEventListener("click", (e) => {
-  e.preventDefault();
-  isRegistering = !isRegistering;
-  document.querySelector(".header h1").textContent = isRegistering ? "Kayıt Ol" : "CareRoutine";
-  document.getElementById("loginBtn").textContent = isRegistering ? "Kayıt Ol" : "Giriş Yap";
-  showRegister.textContent = isRegistering ? "Zaten hesabın var mı? Giriş Yap" : "Hesabın yok mu? Kayıt Ol";
-});

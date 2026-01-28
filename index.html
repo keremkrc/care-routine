@@ -3,73 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CareRoutine</title>
+    <title>CareRoutine Premium</title>
+    
     <link rel="stylesheet" href="style.css">
+    
     <link rel="manifest" href="manifest.json">
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
 
-    <div class="login-container glass-panel" id="loginContainer">
-        <div class="header">
-            <h1>CareRoutine</h1>
-            <p>Modern Yaşam Asistanı</p>
-        </div>
+    <div class="login-wrapper" id="loginContainer">
+        <div class="glass-panel login-container">
+            <div class="header">
+                <h1>CareRoutine</h1>
+                <p>Modern Yaşam Asistanı</p>
+            </div>
 
-        <form id="loginForm">
-            <div class="input-group">
-                <label>Email Adresi</label>
-                <input type="email" id="email" placeholder="ornek@email.com" required>
-            </div>
-            <div class="input-group">
-                <label>Şifre</label>
-                <input type="password" id="password" placeholder="******" required>
-            </div>
-            <button type="submit" id="loginBtn" class="btn-primary">Giriş Yap</button>
-            <p class="switch-text">
-                Hesabın yok mu? <a href="#" id="showRegister">Kayıt Ol</a>
-            </p>
-        </form>
+            <form id="authForm">
+                <div class="input-group">
+                    <label>Email Adresi</label>
+                    <input type="email" id="email" placeholder="isim@ornek.com" required>
+                </div>
+                <div class="input-group">
+                    <label>Şifre</label>
+                    <input type="password" id="password" placeholder="••••••" required>
+                </div>
+                
+                <button type="submit" id="authBtn" class="primary-btn">Giriş Yap</button>
+                
+                <p class="switch-text">
+                    <span id="switchText">Hesabın yok mu?</span> 
+                    <a href="#" id="toggleAuth">Kayıt Ol</a>
+                </p>
+            </form>
+        </div>
     </div>
 
     <div class="dashboard-wrapper" id="dashboardContainer" style="display: none;">
         
         <div class="bento-grid">
             
-            <div class="bento-card glass-panel profile-card">
+            <div class="glass-panel bento-card profile-card">
                 <div class="profile-info">
-                    <span class="greeting">Hoş Geldin,</span>
+                    <span style="color: #94a3b8; font-size: 13px; letter-spacing: 0.5px;">HOŞ GELDİN,</span>
                     <h2 id="userEmailDisplay">Kullanıcı</h2>
                 </div>
-                <button id="logoutBtn" class="btn-danger">Çıkış</button>
+                <button id="logoutBtn" class="logout-btn">Çıkış Yap</button>
             </div>
 
-            <div class="bento-card glass-panel progress-card">
+            <div class="glass-panel bento-card progress-card">
                 <div class="progress-header">
-                    <h3>Günlük Hedef</h3>
-                    <span id="progressPercent">0%</span>
+                    <h3>Günlük Başarım</h3>
+                    <span class="percent" id="progressPercent">0%</span>
                 </div>
-                <div class="progress-bar-bg">
-                    <div id="progressBarFill" class="progress-bar-fill" style="width: 0%"></div>
+                <div class="progress-track">
+                    <div id="progressBarFill" class="progress-fill"></div>
                 </div>
-                <p id="taskCount" class="small-text">0 Görev</p>
+                <p id="taskCount" style="margin-top:10px; font-size:13px; color:#94a3b8;">0 Bekleyen</p>
             </div>
 
-            <div class="bento-card glass-panel add-card">
-                <h3>Yeni Rutin Ekle</h3>
-                <div class="form-row">
-                    <input type="text" id="medicineName" class="modern-input" placeholder="Örn: Su iç, İlaç al">
-                    <input type="time" id="medicineTime" class="modern-input">
-                    <button id="addBtn" class="btn-primary">
-                        <span>+</span> Ekle
+            <div class="glass-panel bento-card add-card">
+                <div class="add-form">
+                    <input type="text" id="medicineName" placeholder="Yeni rutin (Örn: Su iç, Koşu yap)">
+                    <input type="time" id="medicineTime">
+                    <button id="addBtn" class="add-btn">
+                        + Ekle
                     </button>
                 </div>
             </div>
 
-            <div class="bento-card glass-panel list-card">
+            <div class="glass-panel bento-card list-card">
                 <div class="list-header">
-                    <h3>Yapılacaklar</h3>
+                    <h3>Bugünün Görevleri</h3>
                     <span class="badge">Bugün</span>
                 </div>
                 <ul id="medicineList">
@@ -80,10 +88,12 @@
     </div>
 
     <script type="module" src="app.js"></script>
+    
     <script>
-      // PWA Özelliği (Telefona Kurma)
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js');
+        navigator.serviceWorker.register('sw.js')
+        .then(() => console.log("Service Worker Kayıtlı"))
+        .catch(err => console.log("SW Hatası:", err));
       }
     </script>
 </body>
