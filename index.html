@@ -5,15 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CareRoutine</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <div class="login-container" id="loginContainer">
+    <div class="login-container glass-panel" id="loginContainer">
         <div class="header">
             <h1>CareRoutine</h1>
-            <p>Günlük İlaç ve Rutin Takibi</p>
+            <p>Modern Yaşam Asistanı</p>
         </div>
 
         <form id="loginForm">
@@ -25,7 +26,7 @@
                 <label>Şifre</label>
                 <input type="password" id="password" placeholder="******" required>
             </div>
-            <button type="submit" id="loginBtn">Giriş Yap</button>
+            <button type="submit" id="loginBtn" class="btn-primary">Giriş Yap</button>
             <p class="switch-text">
                 Hesabın yok mu? <a href="#" id="showRegister">Kayıt Ol</a>
             </p>
@@ -36,39 +37,40 @@
         
         <div class="bento-grid">
             
-            <div class="bento-card profile-card">
+            <div class="bento-card glass-panel profile-card">
                 <div class="profile-info">
-                    <span class="greeting">👋 Merhaba,</span>
+                    <span class="greeting">Hoş Geldin,</span>
                     <h2 id="userEmailDisplay">Kullanıcı</h2>
                 </div>
-                <button id="logoutBtn" class="icon-btn">Çıkış</button>
+                <button id="logoutBtn" class="btn-danger">Çıkış</button>
             </div>
 
-            <div class="bento-card progress-card">
-                <div class="progress-text">
-                    <h3>Günlük Durum</h3>
-                    <p id="progressPercent">0%</p>
+            <div class="bento-card glass-panel progress-card">
+                <div class="progress-header">
+                    <h3>Günlük Hedef</h3>
+                    <span id="progressPercent">0%</span>
                 </div>
                 <div class="progress-bar-bg">
-                    <div id="progressBarFill" class="progress-bar-fill"></div>
+                    <div id="progressBarFill" class="progress-bar-fill" style="width: 0%"></div>
                 </div>
+                <p id="taskCount" class="small-text">0 Görev</p>
             </div>
 
-            <div class="bento-card add-card">
+            <div class="bento-card glass-panel add-card">
                 <h3>Yeni Rutin Ekle</h3>
                 <div class="form-row">
-                    <input type="text" id="medicineName" placeholder="Rutin adı (Örn: Su iç)">
-                    <input type="time" id="medicineTime">
-                    <button id="addBtn">
+                    <input type="text" id="medicineName" class="modern-input" placeholder="Örn: Su iç, İlaç al">
+                    <input type="time" id="medicineTime" class="modern-input">
+                    <button id="addBtn" class="btn-primary">
                         <span>+</span> Ekle
                     </button>
                 </div>
             </div>
 
-            <div class="bento-card list-card">
+            <div class="bento-card glass-panel list-card">
                 <div class="list-header">
                     <h3>Yapılacaklar</h3>
-                    <span id="taskCount" class="badge">0 Görev</span>
+                    <span class="badge">Bugün</span>
                 </div>
                 <ul id="medicineList">
                     </ul>
@@ -78,5 +80,11 @@
     </div>
 
     <script type="module" src="app.js"></script>
+    <script>
+      // PWA Özelliği (Telefona Kurma)
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+      }
+    </script>
 </body>
 </html>
